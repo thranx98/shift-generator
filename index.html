@@ -152,7 +152,7 @@
         const weekday = now.toLocaleString("en-US", { weekday: "long" });
         
         dateElem.textContent = `Date: ${day}-${month}-${year} (${weekday})`;
-        refreshElem.textContent = `Kuala Lumpur Time: ${now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' })}`;
+        refreshElem.textContent = `Kuala Lumpur Time: ${now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
         
         // Calculate shifts (same logic as before)
         const sequence = ['A','A','A','A','B','B','B','B','C','C','C','C'];
@@ -234,3 +234,4 @@
   </div>
 </body>
 </html>
+
