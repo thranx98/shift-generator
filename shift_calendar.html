@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Today's Shift</title>
+
+  <!-- Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕖</text></svg>">
+
+  <style>
+    :root {
+      --bg: #1e1e2e;
+      --surface: #313244;
+      --accent: #89b4fa;
+      --text: #cdd6f4;
+      --subtext: #a6adc8;
+      --radius: 16px;
+      --max-width: 480px;
+      --green: #00ff00ff; /* current shift: green */
+    }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: var(--max-width);
+      height: 100%;
+      padding: 2rem 1.5rem;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 1.2rem;
+    }
+
+    .header img {
+      width: 40px;
+      height: 40px;
+    }
+
+    h1 {
+      font-size: clamp(1.8rem, 4vw, 2.2rem);
+      font-weight: 600;
+      color: var(--accent);
+      margin: 0;
+    }
+
+    .shift-info {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      gap: 1.4rem;
+      font-size: clamp(1.15rem, 3vw, 1.3rem);
+    }
+
+    .date {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      width: 100%;
+      border-radius: var(--radius);
+      padding: 1.2rem 0.8rem;
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .card p {
+      margin: 0.6rem 0;
+    }
+
+    /* current shift: green */
+    .current-shift {
+      color: var(--green);
+    }
+
+    small {
+      color: var(--subtext);
+      margin-top: 0.8rem;
+      font-size: 0.9rem;
+    }
+
+    button {
+      width: 100%;
+      background: var(--accent);
+      color: #1e1e2e;
+      border: none;
+      border-radius: var(--radius);
+      padding: 1rem 0;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
+
+    button:hover, button:active {
+      opacity: 0.85;
+    }
+
+    @media (min-width: 900px) {
+      .container {
+        border-radius: var(--radius);
+        max-width: 520px;
+        height: 90%;
+        margin: auto;
+      }
+    }
+  </style>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const dateElem = document.getElementById("today-date");
+      const refreshElem = document.getElementById("refresh-time");
+      const shift1Elem = document.getElementById("shift1");
+      const shift2Elem = document.getElementById("shift2");
+      const shift3Elem = document.getElementById("shift3");
+      const shifts = document.querySelectorAll(".card p b");
+      
+      function updateDisplay() {
+        const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kuala_Lumpur" }));
+        const day = now.getDate();
+        const month = now.toLocaleString("en-US", { month: "short" });
+        const year = now.getFullYear();
+        const weekday = now.toLocaleString("en-US", { weekday: "long" });
+        
+        dateElem.textContent = `Date: ${day}-${month}-${year} (${weekday})`;
+        refreshElem.textContent = `Kuala Lumpur Time: ${now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' })}`;
+        
+        // Calculate shifts (same logic as before)
+        const sequence = ['A','A','A','A','B','B','B','B','C','C','C','C'];
+        const REF_YEAR = 2025, REF_MONTH = 1, REF_DAY = 1;
+        const OFFSET_12AM_7AM = 11;
+        const OFFSET_7AM_7PM = 5;
+        const OFFSET_7PM_12AM = 0;
+
+        function getKLNow(){
+          return new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kuala_Lumpur' }));
+        }
+
+        function daysSinceRefKL(todayKL){
+          const y = todayKL.getFullYear();
+          const m = todayKL.getMonth();
+          const d = todayKL.getDate();
+          const utcTodayMid = Date.UTC(y, m, d);
+          const utcRefMid = Date.UTC(REF_YEAR, REF_MONTH - 1, REF_DAY);
+          return Math.floor((utcTodayMid - utcRefMid) / 86400000);
+        }
+
+        function calcShifts(diffDays){
+          const mod = n => ((n % sequence.length) + sequence.length) % sequence.length;
+          const i1 = mod(diffDays + OFFSET_12AM_7AM );
+          const i2 = mod(diffDays + OFFSET_7AM_7PM );
+          const i3 = mod(diffDays + OFFSET_7PM_12AM );
+          return [sequence[i1], sequence[i2], sequence[i3]];
+        }
+
+        const diff = daysSinceRefKL(now);
+        const [firstShift, secondShift, thirdShift] = calcShifts(diff);
+        
+        // Update shift elements
+        shift1Elem.textContent = firstShift;
+        shift2Elem.textContent = secondShift;
+        shift3Elem.textContent = thirdShift;
+        
+        // Highlight current shift
+        const hour = now.getHours();
+        shifts.forEach(s => {
+          s.classList.remove("current-shift");
+          s.parentElement.classList.remove("current-shift");
+        });
+        
+        if (hour >= 0 && hour < 7) {
+          shift1Elem.classList.add("current-shift");
+          shift1Elem.parentElement.classList.add("current-shift");
+        } else if (hour >= 7 && hour < 19) {
+          shift2Elem.classList.add("current-shift");
+          shift2Elem.parentElement.classList.add("current-shift");
+        } else {
+          shift3Elem.classList.add("current-shift");
+          shift3Elem.parentElement.classList.add("current-shift");
+        }
+      }
+
+      updateDisplay();
+      setInterval(updateDisplay, 1000);
+    });
+  </script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36'><text y='32' font-size='32'>🕖</text></svg>" alt="Clock Icon" width="36" height="36">
+      <h1>Today's Shift</h1>
+    </div>
+    <div class="shift-info">
+      <p id="today-date" class="date" data-raw="{{ today }}"></p>
+      <div class="card">
+        <p>💤 12 AM → 7 AM : <b id="shift1">-</b></p>
+        <p>☀️ 7 AM → 7 PM : <b id="shift2">-</b></p>
+        <p>🌙 7 PM → 12 AM : <b id="shift3">-</b></p>
+      </div>
+      <small id="refresh-time"></small>
+    </div>
+    <button onclick="location.reload()">🔄 Manual Refresh</button>
+  </div>
+</body>
+</html>
